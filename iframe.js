@@ -127,26 +127,29 @@
                             }
                     }
                     return function(obj,time,callback){
-                        var time= time || 1000;
+                        var time= time || 1000,
+                            protect = true;
                         calculate_speed(obj,this,time);
                         function animation(cssName,that){
                             animation_key[cssName]["now"] = animation_key[cssName]["now"] + animation_key[cssName]["speed"];
                             that.css(cssName,animation_key[cssName]["now"] + animation_key[cssName]["unit"]);
-                            if(animation_key[cssName]["symbol"] == "+" && parseInt(that.css(cssName)) >= animation_key[cssName]["target"]){
+                            if( animation_key[cssName]["symbol"] == "+" && parseInt(that.css(cssName)) >= animation_key[cssName]["target"]){
                                 that.css(cssName, animation_key[cssName]["target"] + animation_key[cssName]["unit"])
-                                if(callback){
+                                if(callback && protect){
+                                    protect = false;
                                     callback();
                                 }
                                 return
                             }
-                            if(animation_key[cssName]["symbol"] == "-" && parseInt(that.css(cssName)) <= animation_key[cssName]["target"]){
+                            if( animation_key[cssName]["symbol"] == "-" && parseInt(that.css(cssName)) <= animation_key[cssName]["target"]){
                                 that.css(cssName, animation_key[cssName]["target"] + animation_key[cssName]["unit"])
-                                if(callback){
+                                if(callback && protect){
+                                    protect = false;
                                     callback();
                                 }
                                 return
                             }
-                            setTimeout(function(){
+                            animation_key[i]["time"] = setTimeout(function(){
                                 animation(cssName,that);
                             },1)
                         }
@@ -155,8 +158,23 @@
                         }
                     }
                 })();
+                domExtend.event = (function(){
+                    var eventmethod = window.addEventListener;
+                    if(eventmethod){
+                        return function(eventMethod,callback,upchoose){
+                            this.addEventListener(eventMethod,callback,(upchoose || false));
+                            return this;
+                        }
+                    }else{
+                        return function(eventMethod,callback){
+                            this.attachEvent("on" + eventMethod,callback);
+                            return this;
+                        }
+                    }
+                })();
         domExtend.method("css",domExtend.css);
         domExtend.method("animation",domExtend.animation);
+        domExtend.method("event",domExtend.event);
         function judge_id(id_symbol,id){
             if(id_symbol === "#"){
                 return d[gi](id);
@@ -188,6 +206,76 @@
                     }
                 };*/
                 return ele;
+            }
+        })();
+        /* 随机函数生成 */
+        $.getIntrandom = function(i,k){
+            var i = i || 0,
+                k = k || 1,
+                z = parseInt(Math.random()*k + i);
+            if( z > k){
+                 z = z - 10;
+            }
+            return z;
+        };
+        $.browser = (function(){
+            var browser_information = window.navigator.userAgent;
+            return function(){
+                if( browser_information.match("Chrome")){
+                    return "Chrome";
+                }else if( browser_information.match("IE 10.0")){
+                    return "IE 10.0";
+                }else if( browser_information.match("IE 9.0") && !(browser)){
+                    return "不知道什么奇葩浏览器";
+                }else if( browser_information.match("IE 8.0") ){
+                    return "IE 8.0";
+                }else if( browser_information.match("IE 6.0") ){
+                    return "IE 6.0";
+                }else if( browser_information.match("IE 6.0") ){
+                    return "IE 9.0";
+                }else{
+                    return "others"
+                }
+            };
+        })();
+        $.loadimg = (function(){
+            /*依赖关系*/
+            var img_event = domExtend.event;
+            return function(imgName,callback){
+                var imgall,
+                    img_judge = [],
+                    imgthis = $(imgName),
+                    length = imgthis.length,
+                    i = 0;
+                for( ; i < length ; i++){
+                    img_judge[i] = false;
+                    img_event.call(imgthis[i],"load",img_load(i));
+                }
+                function img_load(i){
+                    return function(e){
+                        img_judge[i] = true;
+                        imgall = every(img_judge);
+                        if(imgall){
+                            callback();
+                        }
+                    }
+                };
+                function every(arr){
+                    var k = 0,
+                        length = arr.length;
+                    for( ; k < length ; k++){
+                        if(arr[k]){
+                            continue;
+                        }else{
+                            break;
+                        }
+                    };
+                    if(k === length){
+                        return true;
+                    }else{
+                        return false;
+                    }
+                }
             }
         })();
 })()
